@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+ASDF_INSTALL_TYPE=${ASDF_INSTALL_TYPE:-version}
+TMPDIR=${TMPDIR:-/tmp}
+[ -n "$ASDF_INSTALL_VERSION" ] || (echo >&2 'Missing ASDF_INSTALL_VERSION' && exit 1)
+[ -n "$ASDF_INSTALL_PATH" ] || (echo >&2 'Missing ASDF_INSTALL_PATH' && exit 1)
+
+fail() {
+  echo -e "asdf-opensearch-cli: $*"
+  exit 1
+}
+
+get_platform() {
+  uname | tr '[:upper:]' '[:lower:]'
+}
+
+if [[ "$(get_platform)" != "linux" ]]; then
+  fail "platform not supported"
+fi
+
+get_arch() {
+  local platform arch
+  platform="$(get_platform)"
+  arch="$(uname -m)"
+  case "$platform" in
+  "linux")
+    case "$arch" in
+    "x86_64") echo "x64" ;;
+    "aarch64") echo "arm64" ;;
+    esac
+    ;;
+  esac
+}
+
+get_download_url() {
+  local version platform arch
+  version="$1"
+  platform="$(get_platform)"
+  arch="$(get_arch)"
+  echo "https://github.com/opensearch-project/opensearch-cli/releases/download/${version}/opensearch-cli-${version}-${platform}-${arch}.zip"
+}
+
+install_os_cli() {
+  local install_type version install_path bin_install_path download_url
+  install_type=$1
+  version=$2
+  install_path=$3
+  bin_install_path="$install_path/bin"
+  download_url="$(get_download_url "$version")"
+
+  if [ "$install_type" != "version" ]; then
+    fail "asdf-$TOOL_NAME supports release installs only"
+  fi
+
+  mkdir -p "${bin_install_path}"
+  local bin_path="${bin_install_path}/opensearch-cli"
+
+  echo "Downloading opensearch-cli from ${download_url}"
+  curl -fL "$download_url" | zcat >"$bin_path"
+  chmod +x "$bin_path"
+}
+
+install_os_cli "$ASDF_INSTALL_TYPE" "$ASDF_INSTALL_VERSION" "$ASDF_INSTALL_PATH"
