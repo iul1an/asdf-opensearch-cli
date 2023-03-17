@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+current_script_path=${BASH_SOURCE[0]}
+plugin_dir=$(dirname "$(dirname "$current_script_path")")
+
+# shellcheck source=../lib/utils.bash
+source "${plugin_dir}/lib/utils.bash"
+
+platform="$(get_platform)"
+
+mkdir -p "$ASDF_DOWNLOAD_PATH"
+
+case $platform in
+  "linux")
+    release_file="${ASDF_DOWNLOAD_PATH}/${TOOL_NAME}-${ASDF_INSTALL_VERSION}.zip"
+    download_release "$ASDF_INSTALL_VERSION" "$release_file"
+    unzip "$release_file" -d "$ASDF_DOWNLOAD_PATH" || fail "Could not extract $release_file"
+    ;;
+  "macos")
+    release_file="${ASDF_DOWNLOAD_PATH}/${TOOL_NAME}-${ASDF_INSTALL_VERSION}.pkg"
+    download_release "$ASDF_INSTALL_VERSION" "$release_file"
+    pkgutil --expand-full "$release_file" "${ASDF_DOWNLOAD_PATH}/pkg" || fail "Could not extract $release_file"
+    mv "${ASDF_DOWNLOAD_PATH}/pkg/OpenSearchCLI.pkg/Payload/Library/OpenSearchCLI/opensearch-cli" "${ASDF_DOWNLOAD_PATH}/"
+    rm -rf "${ASDF_DOWNLOAD_PATH}/pkg"
+    ;;
+esac
+
+# Remove the archive since we don't need to keep it
+rm -f "$release_file"

@@ -4,14 +4,14 @@ repos:
   - id: shellcheck
     name: shellcheck
     language: system
-    files: "bin/"
+    files: "^(bin/|lib/)"
     pass_filenames: false
     verbose: true
     entry: scripts/shellcheck.bash
   - id: shfmt
     name: shfmt
     language: system
-    files: "bin/"
+    files: "^(bin/|lib/)"
     pass_filenames: false
     verbose: true
     entry: scripts/shfmt.bash
