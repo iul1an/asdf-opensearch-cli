@@ -14,10 +14,11 @@ fail() {
 
 get_platform() {
   local platform
-  platform="$(uname | tr '[:upper:]' '[:lower:]')"
+  platform="$(uname -s | tr '[:upper:]' '[:lower:]')"
   case $platform in
   "linux") echo "linux" ;;
   "darwin") echo "macos" ;;
+  *) echo "other" ;;
   esac
 }
 
@@ -30,37 +31,61 @@ get_arch() {
     case "$arch" in
     "x86_64") echo "x64" ;;
     "aarch64") echo "arm64" ;;
+    *) echo "other" ;;
     esac
     ;;
   "macos")
     case "$arch" in
     "arm64") echo "arm64" ;;
     "x86_64") echo "x64" ;;
+    *) echo "other" ;;
     esac
     ;;
   esac
 }
 
 get_download_url() {
-  local version platform arch file_ext
+  local version
+  local platform
+  local arch
+  local file_ext
+
   version="$1"
   platform="$(get_platform)"
   arch="$(get_arch)"
-  case $platform in
-  "linux") file_ext="zip" ;;
-  "macos") file_ext="pkg" ;;
-  esac
+  file_ext="zip"
+
+  if [ "$platform" = "macos" ]; then
+    file_ext="pkg"
+  fi
+
   echo "https://github.com/opensearch-project/opensearch-cli/releases/download/${version}/opensearch-cli-${version}-${platform}-${arch}.${file_ext}"
 }
 
 install_os_cli() {
-  local install_type version install_path bin_install_path download_url
+  local install_type
+  local version
+  local install_path
+  local platform
+  local arch
+  local bin_install_path
+  local download_url
+
   install_type=$1
   version=$2
   install_path=$3
   platform="$(get_platform)"
+  arch="$(get_arch)"
   bin_install_path="$install_path/bin"
   download_url="$(get_download_url "$version")"
+
+  if [ "$platform" = "other" ]; then
+    fail "Unsupported platform"
+  fi
+
+  if [ "$arch" = "other" ]; then
+    fail "Unsupported arch"
+  fi
 
   if [ "$install_type" != "version" ]; then
     fail "asdf-$TOOL_NAME supports release installs only"
