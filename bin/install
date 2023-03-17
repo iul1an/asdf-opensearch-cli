@@ -13,12 +13,13 @@ fail() {
 }
 
 get_platform() {
-  uname | tr '[:upper:]' '[:lower:]'
+  local platform
+  platform="$(uname | tr '[:upper:]' '[:lower:]')"
+  case $platform in
+  "linux") echo "linux" ;;
+  "darwin") echo "macos" ;;
+  esac
 }
-
-if [[ "$(get_platform)" != "linux" ]]; then
-  fail "platform not supported"
-fi
 
 get_arch() {
   local platform arch
@@ -31,15 +32,25 @@ get_arch() {
     "aarch64") echo "arm64" ;;
     esac
     ;;
+  "macos")
+    case "$arch" in
+    "arm64") echo "arm64" ;;
+    "x86_64") echo "x64" ;;
+    esac
+    ;;
   esac
 }
 
 get_download_url() {
-  local version platform arch
+  local version platform arch file_ext
   version="$1"
   platform="$(get_platform)"
   arch="$(get_arch)"
-  echo "https://github.com/opensearch-project/opensearch-cli/releases/download/${version}/opensearch-cli-${version}-${platform}-${arch}.zip"
+  case $platform in
+  "linux") file_ext="zip" ;;
+  "macos") file_ext="pkg" ;;
+  esac
+  echo "https://github.com/opensearch-project/opensearch-cli/releases/download/${version}/opensearch-cli-${version}-${platform}-${arch}.${file_ext}"
 }
 
 install_os_cli() {
@@ -47,6 +58,7 @@ install_os_cli() {
   install_type=$1
   version=$2
   install_path=$3
+  platform="$(get_platform)"
   bin_install_path="$install_path/bin"
   download_url="$(get_download_url "$version")"
 
@@ -57,9 +69,24 @@ install_os_cli() {
   mkdir -p "${bin_install_path}"
   local bin_path="${bin_install_path}/opensearch-cli"
 
-  echo "Downloading opensearch-cli from ${download_url}"
-  curl -fL "$download_url" | zcat >"$bin_path"
-  chmod +x "$bin_path"
+  case "$platform" in
+  "linux")
+    echo "Downloading and extracting opensearch-cli from ${download_url}"
+    curl -fL "$download_url" | zcat >"$bin_path"
+    chmod +x "$bin_path"
+    ;;
+  "macos")
+    local timestamp pkg_file tmp_dir
+    timestamp="$(date +%s)"
+    pkg_file="/tmp/opensearch-cli-${timestamp}.pkg"
+    tmp_dir="/tmp/opensearch-cli-files-${timestamp}"
+    echo "Downloading and extracting opensearch-cli from ${download_url}"
+    curl -fL "$download_url" -o "$pkg_file"
+    pkgutil --expand-full "$pkg_file" "${tmp_dir}/"
+    install "${tmp_dir}/OpenSearchCLI.pkg/Payload/Library/OpenSearchCLI/opensearch-cli" "$bin_path"
+    rm -rf "$pkg_file" "$tmp_dir"
+    ;;
+  esac
 }
 
 install_os_cli "$ASDF_INSTALL_TYPE" "$ASDF_INSTALL_VERSION" "$ASDF_INSTALL_PATH"
