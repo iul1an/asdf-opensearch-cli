@@ -14,7 +14,7 @@
 - [License](#license)
 
 # Compatibility
-This plugin only works with Linux amd64 and arm64
+This plugin works with Linux and MacOS, both amd64 and arm64 CPU architecture.
 
 # Install
 
