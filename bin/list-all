@@ -1,17 +1,11 @@
 #!/usr/bin/env bash
 
-releases_path="https://github.com/opensearch-project/opensearch-cli/releases"
-cmd="curl -s"
-if [ -n "$OAUTH_TOKEN" ]; then
-  cmd="$cmd -H 'Authorization: token $OAUTH_TOKEN'"
-fi
-cmd="$cmd $releases_path"
+set -euo pipefail
 
-function sort_versions() {
-  sed 'h; s/[+-]/./g; s/.p\([[:digit:]]\)/.z\1/; s/$/.z/; G; s/\n/ /' |
-    LC_ALL=C sort -t. -k 1,1 -k 2,2n -k 3,3n -k 4,4n -k 5,5n | awk '{print $2}'
-}
+current_script_path=${BASH_SOURCE[0]}
+plugin_dir=$(dirname "$(dirname "$current_script_path")")
 
-# Fetch all releases and sort them
-versions=$(eval "$cmd" | grep -ioE "Version.+Release Notes" | cut -d " " -f2 | sort_versions)
-echo "$versions"
+# shellcheck source=../lib/utils.bash
+source "${plugin_dir}/lib/utils.bash"
+
+list_all_versions | sort_versions | xargs echo
