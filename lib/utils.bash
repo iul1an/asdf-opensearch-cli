@@ -3,6 +3,7 @@
 set -euo pipefail
 
 GH_REPO="https://github.com/opensearch-project/opensearch-cli"
+GH_RELEASES="https://api.github.com/repos/opensearch-project/opensearch-cli/releases"
 TOOL_NAME="opensearch-cli"
 TOOL_TEST="opensearch-cli --help"
 
@@ -23,8 +24,8 @@ sort_versions() {
 }
 
 list_all_versions() {
-  curl "${curl_opts[@]}" "$GH_REPO/releases" |
-    grep -ioE "Version.+Release Notes" | cut -d " " -f2 || fail "Could not fetch versions"
+  curl "${curl_opts[@]}" --url "$GH_RELEASES" |
+    grep -oE "tag_name\": *\".{1,15}\"," | sed -e 's/tag_name\": \"v*//' -e 's/\",//' || fail "Could not fetch versions"
 }
 
 get_platform() {
