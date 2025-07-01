@@ -83,7 +83,14 @@ download_release() {
     file_ext="pkg"
   fi
 
-  url="${GH_REPO}/releases/download/${version}/opensearch-cli-${version}-${platform}-${arch}.${file_ext}"
+  url_version="$version"
+  major_version=$(echo "$version" | cut -d'.' -f1)
+  minor_version=$(echo "$version" | cut -d'.' -f2)
+  if [[ $major_version -ge 1 ]] && [[ $minor_version -ge 2 ]]; then
+    url_version="v${url_version}"
+  fi
+  set -x
+  url="${GH_REPO}/releases/download/${url_version}/opensearch-cli-${version}-${platform}-${arch}.${file_ext}"
   echo "* Downloading ${TOOL_NAME} release ${version}..."
   curl "${curl_opts[@]}" -o "$filename" -C - "$url" || fail "Could not download ${url}"
 }
@@ -101,7 +108,7 @@ install_version() {
     fail "asdf-${TOOL_NAME} supports release installs only"
   fi
 
-  ( 
+  (
     mkdir -p "$install_path"
     cp -r "$ASDF_DOWNLOAD_PATH"/* "$install_path"
     local tool_cmd
